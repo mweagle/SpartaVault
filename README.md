@@ -1,5 +1,5 @@
 # SpartaVault
-Part of the Sparta toolkit - use AWS KMS to encrypt secrets to Go variables that can be committed to SCM.
+Part of the [Sparta](http://gosparta.io) family. A standalone CLI and library to that uses AWS KMS to encrypt secrets into Go variables that can be committed to SCM.
 
 ## Usage
 
