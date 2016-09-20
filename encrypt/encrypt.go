@@ -17,6 +17,7 @@ import (
 	"os"
 	"strings"
 	"text/template"
+	"time"
 )
 
 /******************************************************************************/
@@ -35,6 +36,7 @@ var {{ .PropertyName }} = &spartaVault.KMSEncryptedValue{
 	Key:          				"{{ .Key }}",
 	Nonce:        				"{{ .Nonce }}",
 	Value:       					"{{ .Value }}",
+	Created: 							"{{ .Created }}",
 }
 
 // Usage:
@@ -83,6 +85,7 @@ type KMSEncryptedValue struct {
 	Key             string
 	Nonce           string
 	Value           string
+	Created         string
 }
 
 func (kmsValue *KMSEncryptedValue) Decrypt() ([]byte, error) {
@@ -164,6 +167,7 @@ func newEncryptedValue(keyARN string, PropertyName string, content io.Reader) (*
 	if _, nonceErr := io.ReadFull(rand.Reader, nonce); nonceErr != nil {
 		return nil, nonceErr
 	}
+
 	ciphertext := aesGCM.Seal(nil, nonce, plaintext, nil)
 	encryptedValue := &KMSEncryptedValue{
 		KMSKeyARNOrGuid: keyARN,
@@ -171,32 +175,18 @@ func newEncryptedValue(keyARN string, PropertyName string, content io.Reader) (*
 		Nonce:           base64.StdEncoding.EncodeToString(nonce),
 		PropertyName:    PropertyName,
 		Value:           base64.StdEncoding.EncodeToString(ciphertext),
+		Created:         time.Now().Format(time.RFC3339),
 	}
 	return encryptedValue, nil
 }
 
 func outputEncryptedGolang(encryptedKey *KMSEncryptedValue) error {
-
-	templateParams := struct {
-		PropertyName    string
-		KMSKeyARNOrGuid string
-		Key             string
-		Nonce           string
-		Value           string
-	}{
-		encryptedKey.PropertyName,
-		encryptedKey.KMSKeyARNOrGuid,
-		encryptedKey.Key,
-		encryptedKey.Nonce,
-		encryptedKey.Value,
-	}
-
 	template, templateErr := template.New("KMSSnippet").Parse(encryptedValueCodeTemplate)
 	if nil != templateErr {
 		return templateErr
 	}
 	var doc bytes.Buffer
-	executeErr := template.Execute(&doc, templateParams)
+	executeErr := template.Execute(&doc, *encryptedKey)
 	if nil != executeErr {
 		return executeErr
 	}
@@ -215,7 +205,7 @@ var encryptCmd = &cobra.Command{
 	Long: `Use AWS KMS to produce envelope encrypted secrets that can be committed to source code.
 
 	The command line tool produces a Go language snippet that can be directly
-	used in source code. Note that secrets are AWS region specific.
+	used in source code.
 
 	See:
 		http://docs.aws.amazon.com/kms/latest/developerguide/workflow.html
@@ -223,7 +213,7 @@ var encryptCmd = &cobra.Command{
 	`,
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if "" == encryptOptions.Value && "" == encryptOptions.FilePath {
-			return fmt.Errorf("Provide either string or path plaintext input value")
+			return fmt.Errorf("Provide either --value or --file plaintext input value")
 		}
 		return nil
 	},
