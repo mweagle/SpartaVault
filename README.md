@@ -27,6 +27,36 @@ exit status 255
 go run main.go encrypt --key 4f2f62e1-41e0-49e2-8da4-3a7ec511f498 --value "Hello World" --name "testKey"
 ```
 
+Output:
+
+```golang
+----- BEGIN SNIPPET -----
+
+package main
+
+import (
+	"fmt"
+	spartaVault "github.com/mweagle/SpartaVault/encrypt"
+)
+
+var testKey = &spartaVault.KMSEncryptedValue{
+	KMSKeyARNOrGuid: "4f2f62e1-41e0-49e2-8da4-3a7ec511f498",
+	PropertyName:    "testKey",
+	Key:             "AQEDAHi8zBTBrgXJ4OyfnaJ8C9B2H/WAF54D9vPaarH9Dob2wwAAAH4wfAYJKoZIhvcNAQcGoG8wbQIBADBoBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDB2uCmIx46f45/7wKgIBEIA71iBmbCr8EYuX8XGeAy1Qpus94Q5HXSwBQoH9A77jzJEnNgu+FpP7wi94qMzBBvAU3+mQbf5S39RxUo0=",
+	Nonce:           "lqoVNKQLDlDq8Ij4",
+	Value:           "F2DN/7Looc8ajOO8UJdp4B0mSL7UMvfRa9No",
+}
+
+// Usage:
+// func main() {
+// 	plaintextValue, _ := testKey.Decrypt()
+// 	fmt.Printf("Decrypted: %s\n", plaintextValue)
+// }
+
+-----  END SNIPPET  -----
+
+```
+
 ### Encrypt File
 
 ```bash
