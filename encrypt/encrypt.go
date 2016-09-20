@@ -67,7 +67,7 @@ var encryptOptions encryptOptionsStruct
 /******************************************************************************/
 // Init
 func init() {
-	encryptCmd.Flags().StringVarP(&encryptOptions.KMSKeyName, "key", "k", "", "AWS KMS Keyname (ARN) to use for encryption")
+	encryptCmd.Flags().StringVarP(&encryptOptions.KMSKeyName, "key", "k", "", "AWS KMS Keyname (ARN or GUID) to use for encryption")
 	encryptCmd.Flags().StringVarP(&encryptOptions.PropertyName, "name", "n", "", "go Property name for encrypted value")
 	encryptCmd.Flags().StringVarP(&encryptOptions.Value, "value", "v", "", "String value to encrypt")
 	encryptCmd.Flags().StringVarP(&encryptOptions.FilePath, "file", "f", "", "Path to file whose contents should be encrypted")
