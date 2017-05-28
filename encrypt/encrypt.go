@@ -7,10 +7,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/kms"
-	"github.com/spf13/cobra"
 	"go/format"
 	"io"
 	"io/ioutil"
@@ -18,6 +14,11 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/kms"
+	"github.com/spf13/cobra"
 )
 
 /******************************************************************************/
@@ -31,7 +32,7 @@ import (
 )
 
 var {{ .PropertyName }} = &spartaVault.KMSEncryptedValue{
-	KMSKeyARNOrGuid:      "{{ .KMSKeyARNOrGuid}}",
+	KMSKeyARNOrGUID:      "{{ .KMSKeyARNOrGuid}}",
 	PropertyName:  				"{{ .PropertyName }}",
 	Key:          				"{{ .Key }}",
 	Nonce:        				"{{ .Nonce }}",
@@ -41,7 +42,7 @@ var {{ .PropertyName }} = &spartaVault.KMSEncryptedValue{
 
 // Usage:
 // func main() {
-// 	plaintextValue, _ := testKey.Decrypt()
+// 	plaintextValue, _ := testKey.Decrypt(nil)
 // 	fmt.Printf("Decrypted: %s\n", plaintextValue)
 // }
 `
@@ -80,7 +81,7 @@ func init() {
 /******************************************************************************/
 // Types
 type KMSEncryptedValue struct {
-	KMSKeyARNOrGuid string
+	KMSKeyARNOrGUID string
 	PropertyName    string
 	Key             string
 	Nonce           string
@@ -88,17 +89,25 @@ type KMSEncryptedValue struct {
 	Created         string
 }
 
-func (kmsValue *KMSEncryptedValue) Decrypt() ([]byte, error) {
-	sess, sessionError := session.NewSession()
-	if nil != sessionError {
-		return nil, sessionError
+// Decrypt attempts to decrypt the given KMSEncryptedValue using the
+// optional awsSession. If the awsSession value is nil, a default
+// session will be used
+func (kmsValue *KMSEncryptedValue) Decrypt(awsSession *session.Session) ([]byte, error) {
+	decryptSession := awsSession
+	if nil == decryptSession {
+		sess, sessionError := session.NewSession()
+		if nil != sessionError {
+			return nil, sessionError
+		}
+		decryptSession = sess
 	}
+
 	// Decrypt the one off key
 	decodedKey, decodedKeyErr := base64.StdEncoding.DecodeString(kmsValue.Key)
 	if nil != decodedKeyErr {
 		return nil, decodedKeyErr
 	}
-	kmsSvc := kms.New(sess)
+	kmsSvc := kms.New(decryptSession)
 	params := &kms.DecryptInput{
 		CiphertextBlob: decodedKey,
 	}
@@ -170,7 +179,7 @@ func newEncryptedValue(keyARN string, PropertyName string, content io.Reader) (*
 
 	ciphertext := aesGCM.Seal(nil, nonce, plaintext, nil)
 	encryptedValue := &KMSEncryptedValue{
-		KMSKeyARNOrGuid: keyARN,
+		KMSKeyARNOrGUID: keyARN,
 		Key:             base64.StdEncoding.EncodeToString(generateResp.CiphertextBlob),
 		Nonce:           base64.StdEncoding.EncodeToString(nonce),
 		PropertyName:    PropertyName,
@@ -235,7 +244,7 @@ var encryptCmd = &cobra.Command{
 			return kmsValueErr
 		}
 		// Validate the decryption
-		_, decryptedValueErr := kmsValue.Decrypt()
+		_, decryptedValueErr := kmsValue.Decrypt(nil)
 		if nil != decryptedValueErr {
 			return decryptedValueErr
 		}
