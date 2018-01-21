@@ -80,6 +80,8 @@ func init() {
 
 /******************************************************************************/
 // Types
+
+// KMSEncryptedValue represents the encrypted secret value
 type KMSEncryptedValue struct {
 	KMSKeyARNOrGUID string
 	PropertyName    string
